@@ -4,27 +4,27 @@ import Foundation
 @objc(HttpPlugin) public class HttpPlugin: CAPPlugin {
     var cookieManager: CapacitorCookieManager? = nil
     var capConfig: InstanceConfiguration? = nil
-    
+
     private func getServerUrl(_ call: CAPPluginCall) -> URL? {
         guard let url = capConfig?.serverURL else {
             call.reject("Invalid URL. Check that \"server\" is set correctly in your capacitor.config.json file")
             return nil
         }
-        
+
         return url;
     }
-    
+
     @objc override public func load() {
         cookieManager = CapacitorCookieManager()
         capConfig = bridge?.config
     }
-    
+
     @objc func request(_ call: CAPPluginCall) {
         // Protect against bad values from JS before calling request
         guard let u = call.getString("url") else { return call.reject("Must provide a URL"); }
         guard let _ = call.getString("method") else { return call.reject("Must provide an HTTP Method"); }
         guard var _ = URL(string: u) else { return call.reject("Invalid URL"); }
-    
+
         do {
             try HttpRequestHandler.request(call)
         } catch let e {
@@ -39,7 +39,7 @@ import Foundation
         guard let _ = URL(string: u) else { return call.reject("Invalid URL") }
 
         do {
-            try HttpRequestHandler.request(call)
+            try HttpRequestHandler.download(call)
         } catch let e {
             call.reject(e.localizedDescription)
         }
@@ -52,7 +52,7 @@ import Foundation
         guard let fp = call.getString("filePath") else { return call.reject("Must provide a file path to download the file to") }
         guard let _ = URL(string: u) else { return call.reject("Invalid URL") }
         guard let _ = FilesystemUtils.getFileUrl(fp, fd) else { return call.reject("Unable to get file URL") }
-    
+
         do {
             try HttpRequestHandler.upload(call)
         } catch let e {
@@ -63,7 +63,7 @@ import Foundation
     @objc func setCookie(_ call: CAPPluginCall) {
         guard let key = call.getString("key") else { return call.reject("Must provide key") }
         guard let value = call.getString("value") else { return call.reject("Must provide value") }
-    
+
         let url = getServerUrl(call)
         if url != nil {
             cookieManager!.setCookie(url!, key, cookieManager!.encode(value))
@@ -86,7 +86,7 @@ import Foundation
             ])
         }
     }
-    
+
     @objc func getCookie(_ call: CAPPluginCall) {
         guard let key = call.getString("key") else { return call.reject("Must provide key") }
         let url = getServerUrl(call)
